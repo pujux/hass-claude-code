@@ -1,0 +1,55 @@
+ARG BUILD_FROM
+FROM ${BUILD_FROM}
+
+# HA add-on base images are Alpine-based.
+# Extend PATH for:
+#   /root/.local/bin  — Claude Code native installer target
+#   /root/.bun/bin    — Bun installer target
+ENV \
+    LANG="C.UTF-8" \
+    PATH="/root/.local/bin:/root/.bun/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
+    CLAUDE_CONFIG_DIR="/homeassistant/.claudecode"
+
+# System dependencies
+RUN apk add --no-cache \
+    bash \
+    curl \
+    git \
+    jq \
+    python3 \
+    py3-pip \
+    ca-certificates \
+    tzdata \
+    unzip
+
+# Install Bun (minimum v1.3.5 for Bun.spawn({ terminal }) PTY API)
+RUN curl -fsSL https://bun.sh/install | bash
+
+# Install hass-mcp Python package
+# --break-system-packages required on Alpine with PEP 668 enforcement
+RUN pip3 install --break-system-packages hass-mcp
+
+# Install Claude Code via native installer
+# Binary is placed at /root/.local/bin/claude
+RUN curl -fsSL https://claude.ai/install.sh | sh
+
+# Extract xterm.js browser assets from npm packages
+# These run in the browser only — not imported by server.ts
+WORKDIR /tmp/xterm-build
+COPY rootfs/app/package.json /tmp/xterm-build/
+RUN bun install && \
+    mkdir -p /app/assets && \
+    cp node_modules/@xterm/xterm/lib/xterm.js /app/assets/ && \
+    cp node_modules/@xterm/xterm/css/xterm.css /app/assets/ && \
+    cp node_modules/@xterm/addon-fit/lib/addon-fit.js /app/assets/ && \
+    cd / && rm -rf /tmp/xterm-build
+
+# Copy all rootfs files (app source, s6 services, etc.)
+COPY rootfs/ /
+
+# Ensure s6 run script is executable (git may not preserve +x across platforms)
+RUN chmod a+x /etc/s6-overlay/s6-rc.d/server/run
+
+# Pre-create persistent directories
+# Also created at runtime in the run script, but pre-creating sets correct ownership
+RUN mkdir -p /homeassistant/.claudecode /tmp/claude-paste
