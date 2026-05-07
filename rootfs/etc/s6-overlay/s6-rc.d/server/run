@@ -4,6 +4,11 @@
 # --- Directories ---
 mkdir -p /data/.claudecode /tmp/claude-paste
 
+# --- tmux config: disable status bar (we have our own tab bar) ---
+cat > /root/.tmux.conf << 'EOF'
+set -g status off
+EOF
+
 # --- Ensure /tmp/claude-paste is auto-allowed in Claude Code settings ---
 # Write to both the default (~/.claude) and CLAUDE_CONFIG_DIR locations to cover both cases
 _merge_permission() {
