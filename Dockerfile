@@ -51,6 +51,4 @@ COPY rootfs/ /
 # Ensure s6 run script is executable (git may not preserve +x across platforms)
 RUN chmod a+x /etc/s6-overlay/s6-rc.d/server/run
 
-# Pre-create persistent directories
-# /data is mounted by HA Supervisor at runtime; pre-create so the image has it as fallback
-RUN mkdir -p /data/.claudecode /tmp/claude-paste
+WORKDIR /root
