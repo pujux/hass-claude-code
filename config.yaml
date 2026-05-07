@@ -13,7 +13,7 @@ apparmor: false
 ingress: true
 ingress_port: 7681
 ingress_stream: true
-panel_icon: mdi:robot
+panel_icon: mdi:head-snowflake
 homeassistant_api: true
 auth_api: true
 hassio_api: true
