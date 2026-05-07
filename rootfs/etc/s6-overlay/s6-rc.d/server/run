@@ -8,13 +8,10 @@ mkdir -p /data/.claudecode /tmp/claude-paste
 cat > /data/.claudecode/CLAUDE.md << 'EOF'
 # Image Paste Convention
 
-When the user pastes an image into the terminal, it is saved to
-`/tmp/claude-paste/$CLAUDE_SESSION_NAME/image_N.png` (where N is a sequential number)
-and the text `[Image #N]` is typed at the cursor.
+When the user pastes an image into the terminal, it is saved to disk and the text
+`[Image: /path/to/image.png]` is typed at the cursor.
 
-When you see `[Image #N]` in the conversation, read the image at
-`/tmp/claude-paste/$CLAUDE_SESSION_NAME/image_N.png`.
-The `$CLAUDE_SESSION_NAME` environment variable holds the name of the current terminal session.
+When you see `[Image: /path/to/image.png]`, read the image directly from the specified path.
 EOF
 
 # --- Environment ---

@@ -348,9 +348,9 @@
       try {
         const res = await fetch(`${__ingressPath}/upload`, { method: "POST", body: formData });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const { n } = await res.json();
+        const { path } = await res.json();
         if (ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ type: "input", data: `[Image #${n}]` }));
+          ws.send(JSON.stringify({ type: "input", data: `[Image: ${path}]` }));
         }
       } catch (err) {
         showToast("Image upload failed");
