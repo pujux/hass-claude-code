@@ -1,5 +1,5 @@
 name: Claude Code
-version: "1.0.3"
+version: "1.0.4"
 slug: hass-claude-code
 description: Claude Code AI assistant with Home Assistant integration
 url: https://github.com/pujux/hass-claude-code
@@ -8,6 +8,7 @@ arch:
   - aarch64
 startup: application
 boot: auto
+init: false
 ingress: true
 ingress_port: 7681
 ingress_stream: true
