@@ -1,5 +1,5 @@
 name: Claude Code
-version: "1.0.1"
+version: "1.0.2"
 slug: claude-code
 description: Claude Code AI assistant with Home Assistant integration
 url: https://github.com/your-org/hass-claude-code
