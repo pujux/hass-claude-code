@@ -4,4 +4,4 @@ build_from:
 labels:
   org.opencontainers.image.title: "Claude Code for Home Assistant"
   org.opencontainers.image.description: "Claude Code AI assistant with Home Assistant integration"
-  org.opencontainers.image.source: "https://github.com/your-org/hass-claude-code"
+  org.opencontainers.image.source: "https://github.com/pujux/hass-claude-code"

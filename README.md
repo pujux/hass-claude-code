@@ -1,35 +1,51 @@
 # Claude Code for Home Assistant
 
-A Home Assistant add-on that runs Claude Code with a full-featured web terminal, image paste support, and pre-configured Home Assistant MCP.
+A Home Assistant add-on that runs [Claude Code](https://claude.ai/code) in a full-featured web terminal, directly inside your Home Assistant instance. Includes pre-configured Home Assistant MCP so Claude can read and control your smart home.
+
+## Requirements
+
+- An [Anthropic account](https://console.anthropic.com/) with an active Claude Pro subscription or API credits
+- Home Assistant OS or Supervised installation
 
 ## Installation
 
-Add this repository to your Home Assistant add-on store, then install the **Claude Code** add-on.
+1. In Home Assistant, go to **Settings → Add-ons → Add-on Store**
+2. Click the menu (⋮) in the top right and choose **Repositories**
+3. Add the following URL and click **Add**:
+   ```
+   https://github.com/pujux/hass-claude-code
+   ```
+4. Find **Claude Code** in the store and click **Install**
+5. Start the add-on and open the web UI via the sidebar
 
 ## First run
 
-After starting the add-on, open the web UI via the Home Assistant sidebar. Follow the Claude Code authentication prompt to log in with your Anthropic account.
+On first start, Claude Code will prompt you to log in with your Anthropic account. Follow the authentication flow in the terminal. Your credentials are stored in persistent add-on storage and survive restarts.
 
-## Multiple sessions
+## Features
 
-Use the `+` button in the tab bar to open additional named sessions. Each session runs an independent Claude Code instance.
+### Multiple sessions
 
-## Image paste
+Click `+` in the tab bar or press `Ctrl+T` to open additional named sessions. Each session runs independently. Press `Ctrl+\`` to hide/show the tab bar.
 
-Copy any screenshot or image to your clipboard and paste it (`Ctrl+V` / `Cmd+V`) while Claude Code is waiting for input. The image is saved locally and its path is inserted into the terminal — Claude will read and analyze it when you press Enter.
+### Image paste
 
-## MCP configuration
+Copy any screenshot or image to your clipboard and paste (`Ctrl+V` / `Cmd+V`) into the terminal. The image is saved locally and inserted as `[Image: /path]` — Claude reads and analyzes it automatically.
 
-The Home Assistant MCP is pre-configured. To add additional MCPs, use Claude Code's built-in command inside the terminal:
+### Home Assistant MCP
+
+The Home Assistant MCP is pre-configured on every start. Claude can query entity states, control devices, check automations, and more — no manual setup required.
+
+To add additional MCP servers:
 
 ```sh
 claude mcp add-json my-mcp '{"command": "my-mcp-server"}'
 ```
 
-## Configuration options
+## Configuration
 
 | Option | Default | Description |
 |---|---|---|
-| `terminal_font_size` | 14 | Terminal font size (10–24) |
-| `terminal_theme` | dark | Terminal color theme (`dark` or `light`) |
-| `auto_update_claude` | true | Auto-update Claude Code in background on start |
+| `terminal_font_size` | `14` | Font size in the terminal (10–24) |
+| `terminal_theme` | `dark` | Color theme: `dark` or `light` |
+| `auto_update_claude` | `true` | Auto-update Claude Code on add-on start |
