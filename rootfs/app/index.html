@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claude Code</title>
+  <link rel="stylesheet" href="assets/xterm.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: #1e1e2e;
+    }
+
+    /* Tab bar */
+    #tab-bar {
+      display: flex;
+      align-items: center;
+      background: #181825;
+      border-bottom: 1px solid #313244;
+      height: 32px;
+      flex-shrink: 0;
+      overflow: hidden;
+      transition: height 0.15s ease;
+    }
+    #tab-bar.collapsed { height: 0; border-bottom: none; }
+
+    #tabs { display: flex; flex: 1; overflow-x: auto; scrollbar-width: none; }
+    #tabs::-webkit-scrollbar { display: none; }
+
+    .tab {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 12px;
+      height: 32px;
+      cursor: pointer;
+      color: #6c7086;
+      border-right: 1px solid #313244;
+      font-size: 12px;
+      font-family: system-ui, sans-serif;
+      white-space: nowrap;
+      user-select: none;
+      flex-shrink: 0;
+    }
+    .tab.active { color: #cdd6f4; background: #1e1e2e; }
+    .tab:hover:not(.active) { color: #a6adc8; }
+    .tab .close-btn { opacity: 0; font-size: 14px; line-height: 1; }
+    .tab:hover .close-btn { opacity: 0.6; }
+    .tab .close-btn:hover { opacity: 1; color: #f38ba8; }
+
+    #new-tab-btn {
+      padding: 0 12px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      color: #6c7086;
+      cursor: pointer;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    #new-tab-btn:hover { color: #cdd6f4; }
+
+    /* Terminal container */
+    #terminal-wrap { flex: 1; overflow: hidden; padding: 2px 4px 4px; }
+
+    /* Reconnect overlay */
+    #overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      align-items: center;
+      justify-content: center;
+      color: #cdd6f4;
+      font-family: system-ui, sans-serif;
+      font-size: 14px;
+      z-index: 100;
+    }
+    #overlay.show { display: flex; }
+
+    /* Toast */
+    #toast {
+      display: none;
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #f38ba8;
+      color: #1e1e2e;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-family: system-ui, sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      z-index: 200;
+      pointer-events: none;
+    }
+    #toast.show { display: block; }
+  </style>
+</head>
+<body>
+  <div id="tab-bar">
+    <div id="tabs"></div>
+    <div id="new-tab-btn" title="New session (Ctrl+T)">＋</div>
+  </div>
+  <div id="terminal-wrap"></div>
+  <div id="overlay">Reconnecting…</div>
+  <div id="toast"></div>
+
+  <script src="assets/xterm.js"></script>
+  <script src="assets/addon-fit.js"></script>
+  <script>
+    // Values injected by Bun server at request time
+    const __ingressPath = "{{INGRESS_PATH}}";
+    const __theme = "{{THEME}}";
+    const __fontSize = parseInt("{{FONT_SIZE}}", 10) || 14;
+
+    // --- Theme definitions ---
+    const THEMES = {
+      dark: {
+        background: "#1e1e2e", foreground: "#cdd6f4", cursor: "#f5e0dc",
+        selectionBackground: "#45475a", black: "#45475a", red: "#f38ba8",
+        green: "#a6e3a1", yellow: "#f9e2af", blue: "#89b4fa", magenta: "#cba6f7",
+        cyan: "#89dceb", white: "#bac2de", brightBlack: "#585b70",
+        brightRed: "#f38ba8", brightGreen: "#a6e3a1", brightYellow: "#f9e2af",
+        brightBlue: "#89b4fa", brightMagenta: "#cba6f7", brightCyan: "#89dceb",
+        brightWhite: "#a6adc8",
+      },
+      light: {
+        background: "#eff1f5", foreground: "#4c4f69", cursor: "#dc8a78",
+        selectionBackground: "#acb0be",
+      },
+    };
+
+    // --- Terminal init ---
+    const term = new Terminal({
+      theme: THEMES[__theme] || THEMES.dark,
+      fontSize: __fontSize,
+      fontFamily: "Monaco, Menlo, Consolas, 'Courier New', monospace",
+      cursorBlink: true,
+      scrollback: 20000,
+      bracketedPasteMode: true,
+      allowProposedApi: true,
+    });
+    const fitAddon = new FitAddon.FitAddon();
+    term.loadAddon(fitAddon);
+    term.open(document.getElementById("terminal-wrap"));
+    fitAddon.fit();
+
+    // Resize terminal and notify server on container resize
+    const resizeObserver = new ResizeObserver(() => {
+      fitAddon.fit();
+      sendResize();
+    });
+    resizeObserver.observe(document.getElementById("terminal-wrap"));
+
+    function sendResize() {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: "resize", cols: term.cols, rows: term.rows }));
+      }
+    }
+
+    // Forward terminal input to server
+    term.onData((data) => {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: "input", data }));
+      }
+    });
+
+    // --- State ---
+    let ws = null;
+    let activeSession = "main";
+    let knownSessions = [];
+    let reconnectAttempts = 0;
+    let reconnectTimer = null;
+
+    // --- WebSocket ---
+    function connect() {
+      if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+
+      const proto = location.protocol === "https:" ? "wss" : "ws";
+      ws = new WebSocket(`${proto}://${location.host}${__ingressPath}/ws`);
+
+      ws.onopen = () => {
+        reconnectAttempts = 0;
+        document.getElementById("overlay").classList.remove("show");
+        ws.send(JSON.stringify({ type: "join", session: activeSession }));
+        sendResize();
+      };
+
+      ws.onmessage = (e) => {
+        let msg;
+        try { msg = JSON.parse(e.data); } catch { return; }
+
+        if (msg.type === "output") {
+          term.write(msg.data);
+        } else if (msg.type === "session_list") {
+          knownSessions = msg.sessions;
+          renderTabs();
+          // If our active session was closed by the server, switch to first available
+          if (knownSessions.length > 0 && !knownSessions.includes(activeSession)) {
+            switchSession(knownSessions[0]);
+          }
+        }
+      };
+
+      ws.onclose = () => {
+        ws = null;
+        reconnectAttempts++;
+        const delay = Math.min(1000 * Math.pow(2, reconnectAttempts - 1), 4000); // 1s, 2s, 4s
+        if (reconnectAttempts >= 3) {
+          document.getElementById("overlay").classList.add("show");
+        }
+        reconnectTimer = setTimeout(connect, delay);
+      };
+
+      ws.onerror = () => { ws?.close(); };
+    }
+
+    // --- Session switching ---
+    function switchSession(name) {
+      if (name === activeSession && ws?.readyState === WebSocket.OPEN) return;
+      term.clear();
+      activeSession = name;
+      renderTabs();
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: "join", session: name }));
+        sendResize();
+      }
+    }
+
+    function closeSessionUI(name) {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: "close_session", session: name }));
+      }
+    }
+
+    function openNewSession() {
+      const raw = prompt("Session name:", `session-${knownSessions.length + 1}`);
+      const name = raw?.trim();
+      if (!name) return;
+      term.clear();
+      activeSession = name;
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: "new_session", session: name }));
+        sendResize();
+      }
+    }
+
+    // --- Tab bar ---
+    function renderTabs() {
+      const tabsEl = document.getElementById("tabs");
+      tabsEl.innerHTML = "";
+      for (const name of knownSessions) {
+        const tab = document.createElement("div");
+        tab.className = "tab" + (name === activeSession ? " active" : "");
+
+        const label = document.createElement("span");
+        label.textContent = name;
+        label.ondblclick = (e) => { e.stopPropagation(); startRename(name, label); };
+        tab.appendChild(label);
+
+        const closeBtn = document.createElement("span");
+        closeBtn.className = "close-btn";
+        closeBtn.textContent = "×";
+        closeBtn.title = "Close session";
+        closeBtn.onclick = (e) => { e.stopPropagation(); closeSessionUI(name); };
+        tab.appendChild(closeBtn);
+
+        tab.onclick = () => switchSession(name);
+        tabsEl.appendChild(tab);
+      }
+    }
+
+    function startRename(oldName, labelEl) {
+      const input = document.createElement("input");
+      input.value = oldName;
+      input.style.cssText =
+        "background:transparent;border:none;outline:none;color:inherit;" +
+        "font-size:inherit;font-family:inherit;width:80px;";
+      labelEl.replaceWith(input);
+      input.focus();
+      input.select();
+
+      const commit = () => {
+        const newName = input.value.trim() || oldName;
+        if (newName !== oldName && ws?.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: "new_session", session: newName }));
+          activeSession = newName;
+          setTimeout(() => closeSessionUI(oldName), 200);
+        } else {
+          labelEl.textContent = newName;
+          input.replaceWith(labelEl);
+        }
+      };
+      input.onblur = commit;
+      input.onkeydown = (e) => {
+        if (e.key === "Enter") input.blur();
+        if (e.key === "Escape") { input.value = oldName; input.blur(); }
+        e.stopPropagation();
+      };
+    }
+
+    document.getElementById("new-tab-btn").onclick = openNewSession;
+
+    // Ctrl+` → collapse/expand tab bar; Ctrl+T → new session
+    document.addEventListener("keydown", (e) => {
+      if (e.ctrlKey && e.key === "`") {
+        document.getElementById("tab-bar").classList.toggle("collapsed");
+        fitAddon.fit();
+        e.preventDefault();
+      }
+      if (e.ctrlKey && e.key === "t") {
+        openNewSession();
+        e.preventDefault();
+      }
+    });
+
+    // --- Paste handling ---
+    function showToast(msg, durationMs = 3000) {
+      const el = document.getElementById("toast");
+      el.textContent = msg;
+      el.classList.add("show");
+      setTimeout(() => el.classList.remove("show"), durationMs);
+    }
+
+    window.addEventListener("paste", async (e) => {
+      const files = e.clipboardData?.files;
+      if (!files || files.length === 0) return; // no files — let xterm.js handle text paste
+
+      const imageFile = Array.from(files).find((f) => f.type.startsWith("image/"));
+      if (!imageFile) return; // non-image file — ignore
+
+      e.preventDefault(); // prevent xterm.js from trying to paste binary data
+
+      const ext = (imageFile.type.split("/")[1] || "png").replace(/[^a-z0-9]/g, "") || "png";
+      const formData = new FormData();
+      formData.append("image", new File([imageFile], `paste.${ext}`, { type: imageFile.type }));
+
+      try {
+        const res = await fetch(`${__ingressPath}/upload`, { method: "POST", body: formData });
+        if (!res.ok) throw new Error(`Upload returned HTTP ${res.status}`);
+        const { path } = await res.json();
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: "input", data: path }));
+        }
+      } catch (err) {
+        showToast("Image upload failed");
+        console.error("Image upload error:", err);
+      }
+    });
+
+    // --- Boot ---
+    connect();
+  </script>
+</body>
+</html>
