@@ -9,7 +9,7 @@ A Home Assistant add-on that runs [Claude Code](https://claude.ai/code) in a ful
 
 ## Installation
 
-1. In Home Assistant, go to **Settings → Add-ons → Add-on Store**
+1. In Home Assistant, go to **Settings → Apps → Install App**
 2. Click the menu (⋮) in the top right and choose **Repositories**
 3. Add the following URL and click **Add**:
    ```
