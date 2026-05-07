@@ -3,18 +3,14 @@
 profile claude_code flags=(attach_disconnected,mediate_deleted) {
   #include <abstractions/base>
 
-  # Capabilities required for PTY management and filesystem access
   capability dac_read_search,
   capability ptrace,
 
-  # Allow all network (Claude Code calls api.anthropic.com; hass-mcp calls HA supervisor)
   network,
 
-  # PTY device access
   /dev/ptmx rw,
   /dev/pts/* rw,
 
-  # Executables — ix = inherit profile + execute
   /bin/bash ix,
   /usr/bin/bash ix,
   /usr/bin/python3* ix,
@@ -22,36 +18,28 @@ profile claude_code flags=(attach_disconnected,mediate_deleted) {
   /root/.local/bin/hass-mcp ix,
   /root/.bun/bin/bun ix,
 
-  # uv-managed tools and Python environments
-  /root/.local/share/uv/** ix,
-  /root/.local/share/uv/** mr,
+  # uv — combine read+exec in one rule to avoid duplicate path conflict
+  /root/.local/share/uv/** rix,
 
-  # Bun runtime and app
   /root/.bun/** mr,
   /app/** mr,
 
-  # Claude Code config (persistent storage across restarts)
   /homeassistant/.claudecode/** rwk,
 
-  # Temp upload directory
   /tmp/claude-paste/** rwk,
   /tmp/** rw,
 
-  # Add-on options and persistent data
   /data/** rwk,
 
-  # HA mapped volumes
   /homeassistant/** rw,
   /share/** rw,
   /media/** rw,
   /ssl/** r,
   /addon_config/** rw,
 
-  # System reads
   /etc/** r,
   /proc/** r,
   /sys/fs/cgroup/** r,
 
-  # Deny direct access to other add-on data
   deny /data/supervisor/** rwx,
 }
