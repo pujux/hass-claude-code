@@ -88,9 +88,13 @@ export function restartSessionProc(session: Session): void {
 export function closeSession(name: string): void {
   const session = sessions.get(name);
   if (!session) return;
-  try {
-    session.proc?.kill();
-  } catch {}
+  const pid = session.proc?.pid;
+  if (pid) {
+    // Kill the entire process group (negative PID) so child processes
+    // like running claude instances don't survive as orphans
+    try { process.kill(-pid, "SIGTERM"); } catch {}
+    setTimeout(() => { try { process.kill(-pid, "SIGKILL"); } catch {} }, 3000);
+  }
   sessions.delete(name);
   broadcastSessionList();
 }
