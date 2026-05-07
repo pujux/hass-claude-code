@@ -329,7 +329,8 @@
       setTimeout(() => el.classList.remove("show"), durationMs);
     }
 
-    window.addEventListener("paste", async (e) => {
+    document.addEventListener("paste", async (e) => {
+      console.debug("[paste] event fired (capture)");
       const items = Array.from(e.clipboardData?.items || []);
       console.debug("[paste] clipboardData items:", items.map((i) => `${i.kind}:${i.type}`));
       console.debug("[paste] clipboardData files:", e.clipboardData?.files?.length ?? 0);
@@ -370,7 +371,7 @@
         showToast("Image upload failed");
         console.error("[paste] upload error:", err);
       }
-    });
+    }, true); // capture phase — fires before xterm.js handles paste
 
     // --- Boot ---
     connect();
