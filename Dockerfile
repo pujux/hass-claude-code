@@ -25,13 +25,14 @@ RUN apk add --no-cache \
 # Install Bun (minimum v1.3.5 for Bun.spawn({ terminal }) PTY API)
 RUN curl -fsSL https://bun.sh/install | bash
 
-# Install hass-mcp Python package
-# --break-system-packages required on Alpine with PEP 668 enforcement
-RUN pip3 install --break-system-packages hass-mcp
+# Install uv — fast Python package manager that handles Python version requirements
+# hass-mcp requires Python >=3.13 but HA base images ship 3.12; uv resolves this automatically
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+RUN uv tool install hass-mcp
 
 # Install Claude Code via native installer
 # Binary is placed at /root/.local/bin/claude
-RUN curl -fsSL https://claude.ai/install.sh | sh
+RUN curl -fsSL https://claude.ai/install.sh | bash
 
 # Extract xterm.js browser assets from npm packages
 # These run in the browser only — not imported by server.ts
