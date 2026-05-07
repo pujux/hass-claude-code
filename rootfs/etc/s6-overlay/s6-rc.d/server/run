@@ -57,7 +57,7 @@ export TERMINAL_THEME="${THEME}"
 # Remove then re-add every start so SUPERVISOR_TOKEN (stable for container lifetime) is current.
 claude mcp remove homeassistant 2>/dev/null || true
 if claude mcp add-json homeassistant \
-    "{\"command\":\"hass-mcp\",\"env\":{\"HASS_TOKEN\":\"${SUPERVISOR_TOKEN}\"}}" \
+    "{\"command\":\"hass-mcp\",\"env\":{\"HA_TOKEN\":\"${SUPERVISOR_TOKEN}\",\"HA_URL\":\"http://supervisor/core\"}}" \
     -s user 2>&1 | bashio::log.info; then
   bashio::log.info "Home Assistant MCP registered"
 else
