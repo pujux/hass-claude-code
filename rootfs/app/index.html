@@ -114,7 +114,6 @@
 
   <script src="assets/xterm.js"></script>
   <script src="assets/addon-fit.js"></script>
-  <script src="assets/addon-image.js"></script>
   <script>
     // Values injected by Bun server at request time
     const __ingressPath = "{{INGRESS_PATH}}";
@@ -149,9 +148,7 @@
       allowProposedApi: true,
     });
     const fitAddon = new FitAddon.FitAddon();
-    const imageAddon = new ImageAddon.ImageAddon();
     term.loadAddon(fitAddon);
-    term.loadAddon(imageAddon);
     term.open(document.getElementById("terminal-wrap"));
     fitAddon.fit();
 
@@ -344,25 +341,16 @@
 
       const ext = (imageItem.type.split("/")[1] || "png").replace(/[^a-z0-9]/g, "") || "png";
 
-      // Show inline preview using OSC 1337 (iTerm2 protocol, supported by addon-image)
-      try {
-        const base64 = await new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onload = (ev) => resolve(ev.target.result.split(",")[1]);
-          reader.readAsDataURL(imageFile);
-        });
-        term.write(`\r\n\x1b]1337;File=inline=1;width=auto;height=10;preserveAspectRatio=1:${base64}\x07\r\n`);
-      } catch (_) { /* non-fatal — still upload */ }
-
       // Upload and type path into PTY
       const formData = new FormData();
       formData.append("image", new File([imageFile], `paste.${ext}`, { type: imageItem.type }));
+      formData.append("session", activeSession);
       try {
         const res = await fetch(`${__ingressPath}/upload`, { method: "POST", body: formData });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const { path } = await res.json();
+        const { n } = await res.json();
         if (ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ type: "input", data: path }));
+          ws.send(JSON.stringify({ type: "input", data: `[Image #${n}]` }));
         }
       } catch (err) {
         showToast("Image upload failed");

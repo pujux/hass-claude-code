@@ -7,10 +7,10 @@ import {
   restartSessionProc,
   broadcastSessionList,
 } from "./session.ts";
-import { handleUpload, DEFAULT_UPLOAD_DIR } from "./upload.ts";
+import { handleUpload, DEFAULT_UPLOAD_BASE } from "./upload.ts";
 
 // --- Startup ---
-mkdirSync(DEFAULT_UPLOAD_DIR, { recursive: true });
+mkdirSync(DEFAULT_UPLOAD_BASE, { recursive: true });
 mkdirSync("/homeassistant/.claudecode", { recursive: true });
 
 const htmlTemplate = readFileSync(path.join(import.meta.dir, "index.html"), "utf8");

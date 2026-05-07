@@ -50,6 +50,7 @@ function spawnPty(session: Session): void {
       ...process.env,
       CLAUDE_CONFIG_DIR: "/data/.claudecode",
       TERM: "xterm-256color",
+      CLAUDE_SESSION_NAME: session.name,
     },
   } as any);
 

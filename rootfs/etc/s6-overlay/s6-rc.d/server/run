@@ -4,6 +4,19 @@
 # --- Directories ---
 mkdir -p /data/.claudecode /tmp/claude-paste
 
+# Write image-paste convention so Claude Code understands [Image #N] references
+cat > /data/.claudecode/CLAUDE.md << 'EOF'
+# Image Paste Convention
+
+When the user pastes an image into the terminal, it is saved to
+`/tmp/claude-paste/$CLAUDE_SESSION_NAME/image_N.png` (where N is a sequential number)
+and the text `[Image #N]` is typed at the cursor.
+
+When you see `[Image #N]` in the conversation, read the image at
+`/tmp/claude-paste/$CLAUDE_SESSION_NAME/image_N.png`.
+The `$CLAUDE_SESSION_NAME` environment variable holds the name of the current terminal session.
+EOF
+
 # --- Environment ---
 export CLAUDE_CONFIG_DIR="/data/.claudecode"
 
