@@ -5,11 +5,13 @@
 mkdir -p /data/.claudecode /tmp/claude-paste
 
 # --- Ensure /tmp/claude-paste is auto-allowed in Claude Code settings ---
-SETTINGS_FILE="/data/.claudecode/settings.json"
+# Claude Code reads settings from ~/.claude/settings.json regardless of CLAUDE_CONFIG_DIR
+mkdir -p /root/.claude
+SETTINGS_FILE="/root/.claude/settings.json"
 if [ ! -f "$SETTINGS_FILE" ]; then
   echo '{"permissions":{"allow":[],"deny":[]}}' > "$SETTINGS_FILE"
 fi
-jq '.permissions.allow |= (. + ["Read(/tmp/claude-paste/**)"] | unique)' \
+jq '.permissions.allow |= (. + ["Read(//tmp/claude-paste/**)"] | unique)' \
   "$SETTINGS_FILE" > "${SETTINGS_FILE}.tmp" && mv "${SETTINGS_FILE}.tmp" "$SETTINGS_FILE"
 
 # Write image-paste convention so Claude Code understands [Image: path] references
