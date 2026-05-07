@@ -5,10 +5,16 @@ export type Session = {
   proc: any;
   clients: Set<any>; // Set<ServerWebSocket> — avoid circular import with server.ts
   name: string;
+  tmuxName: string;
   scrollback: string;
 };
 
 export const sessions = new Map<string, Session>();
+
+// tmux session names only allow [a-zA-Z0-9_\-.]
+function toTmuxName(name: string): string {
+  return name.replace(/[^a-zA-Z0-9_\-.]/g, "_") || "session";
+}
 
 export function appendScrollback(session: Pick<Session, "scrollback">, data: string): void {
   session.scrollback += data;
@@ -27,37 +33,46 @@ export function broadcastSessionList(): void {
 }
 
 function spawnPty(session: Session): void {
-  // Bun.spawn terminal API (v1.3.5+):
-  //   terminal: { cols, rows, data(terminal, chunk) } — I/O via proc.terminal.write() / data callback
-  //   proc.stdin / proc.stdout are null when terminal is set
-  //   proc.terminal.resize(cols, rows) for resize
-  // `as any` guards against incomplete TypeScript typedefs in some Bun versions
-  const proc = Bun.spawn(["bash", "--login"], {
-    cwd: "/homeassistant",
-    terminal: {
-      cols: 220,
-      rows: 50,
-      data(_terminal: unknown, chunk: Buffer) {
-        const data = chunk.toString();
-        appendScrollback(session, data);
-        const msg = JSON.stringify({ type: "output", data });
-        for (const ws of session.clients) {
-          ws.send(msg);
-        }
+  // tmux new-session -A: attach if session already exists, create otherwise.
+  // This is the key flag that makes sessions survive add-on restarts —
+  // Bun respawns the tmux client, which reattaches to the still-running session.
+  const proc = Bun.spawn(
+    [
+      "tmux", "new-session", "-A",
+      "-s", session.tmuxName,
+      "-x", "220",
+      "-y", "50",
+      "-e", `CLAUDE_SESSION_NAME=${session.name}`,
+      "-e", `CLAUDE_CONFIG_DIR=/data/.claudecode`,
+      "bash", "--login",
+    ],
+    {
+      cwd: "/homeassistant",
+      terminal: {
+        cols: 220,
+        rows: 50,
+        data(_terminal: unknown, chunk: Buffer) {
+          const data = chunk.toString();
+          appendScrollback(session, data);
+          const msg = JSON.stringify({ type: "output", data });
+          for (const ws of session.clients) {
+            ws.send(msg);
+          }
+        },
       },
-    },
-    env: {
-      ...process.env,
-      CLAUDE_CONFIG_DIR: "/data/.claudecode",
-      TERM: "xterm-256color",
-      CLAUDE_SESSION_NAME: session.name,
-    },
-  } as any);
+      env: {
+        ...process.env,
+        CLAUDE_CONFIG_DIR: "/data/.claudecode",
+        TERM: "xterm-256color",
+        CLAUDE_SESSION_NAME: session.name,
+      },
+    } as any
+  );
 
   session.proc = proc;
 
   proc.exited.then(() => {
-    // Skip if this session was explicitly closed — clients have already moved on
+    // Skip if session was explicitly closed — clients have already moved on
     if (!sessions.has(session.name)) return;
     const deadMsg = JSON.stringify({
       type: "output",
@@ -75,6 +90,7 @@ export function createSession(name: string): Session {
     proc: null,
     clients: new Set(),
     name,
+    tmuxName: toTmuxName(name),
     scrollback: "",
   };
   sessions.set(name, session);
@@ -90,12 +106,12 @@ export function restartSessionProc(session: Session): void {
 export function closeSession(name: string): void {
   const session = sessions.get(name);
   if (!session) return;
+  // Kill the tmux session — terminates all processes inside it
+  Bun.spawnSync(["tmux", "kill-session", "-t", session.tmuxName]);
+  // Also SIGTERM the client process in case tmux kill-session is slow
   const pid = session.proc?.pid;
   if (pid) {
-    // Kill the entire process group (negative PID) so child processes
-    // like running claude instances don't survive as orphans
     try { process.kill(-pid, "SIGTERM"); } catch {}
-    setTimeout(() => { try { process.kill(-pid, "SIGKILL"); } catch {} }, 3000);
   }
   sessions.delete(name);
   broadcastSessionList();
