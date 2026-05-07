@@ -11,7 +11,6 @@ import { handleUpload, DEFAULT_UPLOAD_BASE } from "./upload.ts";
 
 // --- Startup ---
 mkdirSync(DEFAULT_UPLOAD_BASE, { recursive: true });
-mkdirSync("/homeassistant/.claudecode", { recursive: true });
 
 const htmlTemplate = readFileSync(path.join(import.meta.dir, "index.html"), "utf8");
 const FONT_SIZE = process.env.TERMINAL_FONT_SIZE || "14";
@@ -37,6 +36,8 @@ function handleMessage(ws: any, raw: string): void {
   }
 
   if (msg.type === "join") {
+    const prev = sessions.get(ws.data.session);
+    if (prev) prev.clients.delete(ws);
     const session = sessions.get(msg.session) ?? createSession(msg.session);
     session.clients.add(ws);
     ws.data.session = msg.session;

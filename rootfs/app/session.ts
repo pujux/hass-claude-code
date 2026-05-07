@@ -57,6 +57,8 @@ function spawnPty(session: Session): void {
   session.proc = proc;
 
   proc.exited.then(() => {
+    // Skip if this session was explicitly closed — clients have already moved on
+    if (!sessions.has(session.name)) return;
     const deadMsg = JSON.stringify({
       type: "output",
       data: "\r\n\x1b[33mSession ended — press Enter to restart\x1b[0m\r\n",
