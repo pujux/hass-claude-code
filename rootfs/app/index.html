@@ -22,7 +22,7 @@
       align-items: center;
       background: #181825;
       border-bottom: 1px solid #313244;
-      height: 32px;
+      height: 42px;
       flex-shrink: 0;
       overflow: hidden;
       transition: height 0.15s ease;
@@ -36,8 +36,8 @@
       display: flex;
       align-items: center;
       gap: 6px;
-      padding: 0 12px;
-      height: 32px;
+      padding: 0 14px;
+      height: 42px;
       cursor: pointer;
       color: #6c7086;
       border-right: 1px solid #313244;
@@ -54,8 +54,8 @@
     .tab .close-btn:hover { opacity: 1; color: #f38ba8; }
 
     #new-tab-btn {
-      padding: 0 12px;
-      height: 32px;
+      padding: 0 14px;
+      height: 42px;
       display: flex;
       align-items: center;
       color: #6c7086;
@@ -330,17 +330,20 @@
     }
 
     window.addEventListener("paste", async (e) => {
-      const files = e.clipboardData?.files;
-      if (!files || files.length === 0) return; // no files — let xterm.js handle text paste
+      // Check items first (covers screenshots and images copied from apps/browser)
+      // files only contains dragged files, not clipboard images
+      const items = Array.from(e.clipboardData?.items || []);
+      const imageItem = items.find((i) => i.type.startsWith("image/"));
+      if (!imageItem) return; // no image — let xterm.js handle text paste
 
-      const imageFile = Array.from(files).find((f) => f.type.startsWith("image/"));
-      if (!imageFile) return; // non-image file — ignore
+      e.preventDefault();
 
-      e.preventDefault(); // prevent xterm.js from trying to paste binary data
+      const imageFile = imageItem.getAsFile();
+      if (!imageFile) return;
 
-      const ext = (imageFile.type.split("/")[1] || "png").replace(/[^a-z0-9]/g, "") || "png";
+      const ext = (imageItem.type.split("/")[1] || "png").replace(/[^a-z0-9]/g, "") || "png";
       const formData = new FormData();
-      formData.append("image", new File([imageFile], `paste.${ext}`, { type: imageFile.type }));
+      formData.append("image", new File([imageFile], `paste.${ext}`, { type: imageItem.type }));
 
       try {
         const res = await fetch(`${__ingressPath}/upload`, { method: "POST", body: formData });

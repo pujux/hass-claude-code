@@ -14,7 +14,7 @@ for d in share media ssl backup addons addon_configs; do
   [ -d "/$d" ] && ln -sf "/$d" "/root/$d" || true
 done
 
-cd /root || true
+cd /homeassistant || true
 
 # --- Read add-on options ---
 FONT_SIZE=$(bashio::config 'terminal_font_size' '14')
