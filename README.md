@@ -20,13 +20,13 @@ A Home Assistant add-on that runs [Claude Code](https://claude.ai/code) in a ful
 
 ## First run
 
-On first start, Claude Code will prompt you to log in with your Anthropic account. Follow the authentication flow in the terminal. Your credentials are stored in persistent add-on storage and survive restarts.
+After the add-on starts, open the web UI from the sidebar. You will be greeted with a bash terminal. Type `claude` and press Enter to launch Claude Code. On first launch it will prompt you to log in with your Anthropic account — follow the authentication flow in the terminal. Your credentials are stored in persistent add-on storage and survive restarts.
 
 ## Features
 
 ### Multiple sessions
 
-Click `+` in the tab bar or press `Ctrl+T` to open additional named sessions. Each session runs independently. Press `Ctrl+\`` to hide/show the tab bar.
+Click `+` in the tab bar to open additional named sessions. Each session runs independently. Press `Ctrl+\`` to hide/show the tab bar.
 
 ### Image paste
 

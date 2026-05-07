@@ -308,15 +308,11 @@
 
     document.getElementById("new-tab-btn").onclick = openNewSession;
 
-    // Ctrl+` → collapse/expand tab bar; Ctrl+T → new session
+    // Ctrl+` → collapse/expand tab bar
     document.addEventListener("keydown", (e) => {
       if (e.ctrlKey && e.key === "`") {
         document.getElementById("tab-bar").classList.toggle("collapsed");
         fitAddon.fit();
-        e.preventDefault();
-      }
-      if (e.ctrlKey && e.key === "t") {
-        openNewSession();
         e.preventDefault();
       }
     });
