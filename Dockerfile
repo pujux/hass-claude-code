@@ -8,7 +8,7 @@ FROM ${BUILD_FROM}
 ENV \
     LANG="C.UTF-8" \
     PATH="/root/.local/bin:/root/.bun/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
-    CLAUDE_CONFIG_DIR="/homeassistant/.claudecode"
+    CLAUDE_CONFIG_DIR="/data/.claudecode"
 
 # System dependencies
 RUN apk add --no-cache \
@@ -52,5 +52,5 @@ COPY rootfs/ /
 RUN chmod a+x /etc/s6-overlay/s6-rc.d/server/run
 
 # Pre-create persistent directories
-# Also created at runtime in the run script, but pre-creating sets correct ownership
-RUN mkdir -p /homeassistant/.claudecode /tmp/claude-paste
+# /data is mounted by HA Supervisor at runtime; pre-create so the image has it as fallback
+RUN mkdir -p /data/.claudecode /tmp/claude-paste

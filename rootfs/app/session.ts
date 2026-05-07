@@ -33,6 +33,7 @@ function spawnPty(session: Session): void {
   //   proc.terminal.resize(cols, rows) for resize
   // `as any` guards against incomplete TypeScript typedefs in some Bun versions
   const proc = Bun.spawn(["bash", "--login"], {
+    cwd: "/root",
     terminal: {
       cols: 220,
       rows: 50,
@@ -47,7 +48,7 @@ function spawnPty(session: Session): void {
     },
     env: {
       ...process.env,
-      CLAUDE_CONFIG_DIR: "/homeassistant/.claudecode",
+      CLAUDE_CONFIG_DIR: "/data/.claudecode",
       TERM: "xterm-256color",
     },
   } as any);

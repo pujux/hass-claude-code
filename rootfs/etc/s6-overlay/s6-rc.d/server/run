@@ -2,10 +2,19 @@
 # shellcheck shell=bash
 
 # --- Directories ---
-mkdir -p /homeassistant/.claudecode /tmp/claude-paste
+mkdir -p /data/.claudecode /tmp/claude-paste
 
 # --- Environment ---
-export CLAUDE_CONFIG_DIR="/homeassistant/.claudecode"
+export CLAUDE_CONFIG_DIR="/data/.claudecode"
+
+# --- Symlinks in /root to match SSH terminal navigation ---
+ln -sf /homeassistant /root/config
+ln -sf /homeassistant /root/homeassistant
+for d in share media ssl backup addons addon_configs; do
+  [ -d "/$d" ] && ln -sf "/$d" "/root/$d" || true
+done
+
+cd /root || true
 
 # --- Read add-on options ---
 FONT_SIZE=$(bashio::config 'terminal_font_size' '14')
