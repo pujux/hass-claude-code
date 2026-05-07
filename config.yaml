@@ -1,0 +1,31 @@
+name: Claude Code
+version: "1.0.0"
+slug: claude-code
+description: Claude Code AI assistant with Home Assistant integration
+url: https://github.com/your-org/hass-claude-code
+arch:
+  - amd64
+  - aarch64
+startup: application
+boot: auto
+ingress: true
+ingress_port: 7681
+ingress_stream: true
+panel_icon: mdi:robot
+homeassistant_api: true
+auth_api: true
+hassio_api: true
+map:
+  - homeassistant:rw
+  - ssl:ro
+  - share:rw
+  - media:rw
+  - addon_config:rw
+options:
+  terminal_font_size: 14
+  terminal_theme: dark
+  auto_update_claude: true
+schema:
+  terminal_font_size: "int(10,24)"
+  terminal_theme: "list(dark|light)"
+  auto_update_claude: bool

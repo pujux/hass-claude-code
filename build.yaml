@@ -1,0 +1,7 @@
+build_from:
+  amd64: ghcr.io/home-assistant/amd64-base:latest
+  aarch64: ghcr.io/home-assistant/aarch64-base:latest
+labels:
+  org.opencontainers.image.title: "Claude Code for Home Assistant"
+  org.opencontainers.image.description: "Claude Code AI assistant with Home Assistant integration"
+  org.opencontainers.image.source: "https://github.com/your-org/hass-claude-code"
