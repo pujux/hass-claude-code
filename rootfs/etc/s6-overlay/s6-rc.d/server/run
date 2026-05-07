@@ -4,7 +4,15 @@
 # --- Directories ---
 mkdir -p /data/.claudecode /tmp/claude-paste
 
-# Write image-paste convention so Claude Code understands [Image #N] references
+# --- Ensure /tmp/claude-paste is auto-allowed in Claude Code settings ---
+SETTINGS_FILE="/data/.claudecode/settings.json"
+if [ ! -f "$SETTINGS_FILE" ]; then
+  echo '{"permissions":{"allow":[],"deny":[]}}' > "$SETTINGS_FILE"
+fi
+jq '.permissions.allow |= (. + ["Read(/tmp/claude-paste/**)"] | unique)' \
+  "$SETTINGS_FILE" > "${SETTINGS_FILE}.tmp" && mv "${SETTINGS_FILE}.tmp" "$SETTINGS_FILE"
+
+# Write image-paste convention so Claude Code understands [Image: path] references
 cat > /data/.claudecode/CLAUDE.md << 'EOF'
 # Image Paste Convention
 
