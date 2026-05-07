@@ -43,6 +43,7 @@ RUN bun install && \
     cp node_modules/@xterm/xterm/lib/xterm.js /app/assets/ && \
     cp node_modules/@xterm/xterm/css/xterm.css /app/assets/ && \
     cp node_modules/@xterm/addon-fit/lib/addon-fit.js /app/assets/ && \
+    cp node_modules/@xterm/addon-image/lib/addon-image.js /app/assets/ && \
     cd / && rm -rf /tmp/xterm-build
 
 # Copy all rootfs files (app source, s6 services, etc.)

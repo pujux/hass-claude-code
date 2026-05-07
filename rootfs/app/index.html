@@ -114,6 +114,7 @@
 
   <script src="assets/xterm.js"></script>
   <script src="assets/addon-fit.js"></script>
+  <script src="assets/addon-image.js"></script>
   <script>
     // Values injected by Bun server at request time
     const __ingressPath = "{{INGRESS_PATH}}";
@@ -148,7 +149,9 @@
       allowProposedApi: true,
     });
     const fitAddon = new FitAddon.FitAddon();
+    const imageAddon = new ImageAddon.ImageAddon();
     term.loadAddon(fitAddon);
+    term.loadAddon(imageAddon);
     term.open(document.getElementById("terminal-wrap"));
     fitAddon.fit();
 
@@ -330,40 +333,34 @@
     }
 
     document.addEventListener("paste", async (e) => {
-      console.debug("[paste] event fired (capture)");
       const items = Array.from(e.clipboardData?.items || []);
-      console.debug("[paste] clipboardData items:", items.map((i) => `${i.kind}:${i.type}`));
-      console.debug("[paste] clipboardData files:", e.clipboardData?.files?.length ?? 0);
-
-      // Check items first (covers screenshots and images copied from apps/browser)
-      // files only contains dragged files, not clipboard images
       const imageItem = items.find((i) => i.type.startsWith("image/"));
-      if (!imageItem) {
-        console.debug("[paste] no image item found, letting xterm handle");
-        return;
-      }
+      if (!imageItem) return; // no image — let xterm.js handle text paste
 
-      console.debug("[paste] image item found:", imageItem.type);
       e.preventDefault();
 
       const imageFile = imageItem.getAsFile();
-      if (!imageFile) {
-        console.debug("[paste] getAsFile() returned null");
-        return;
-      }
-      console.debug("[paste] file size:", imageFile.size);
+      if (!imageFile) return;
 
       const ext = (imageItem.type.split("/")[1] || "png").replace(/[^a-z0-9]/g, "") || "png";
+
+      // Show inline preview using OSC 1337 (iTerm2 protocol, supported by addon-image)
+      try {
+        const base64 = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (ev) => resolve(ev.target.result.split(",")[1]);
+          reader.readAsDataURL(imageFile);
+        });
+        term.write(`\r\n\x1b]1337;File=inline=1;width=auto;height=10;preserveAspectRatio=1:${base64}\x07\r\n`);
+      } catch (_) { /* non-fatal — still upload */ }
+
+      // Upload and type path into PTY
       const formData = new FormData();
       formData.append("image", new File([imageFile], `paste.${ext}`, { type: imageItem.type }));
-
       try {
-        console.debug("[paste] uploading to", `${__ingressPath}/upload`);
         const res = await fetch(`${__ingressPath}/upload`, { method: "POST", body: formData });
-        console.debug("[paste] upload response status:", res.status);
-        if (!res.ok) throw new Error(`Upload returned HTTP ${res.status}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const { path } = await res.json();
-        console.debug("[paste] uploaded path:", path);
         if (ws && ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({ type: "input", data: path }));
         }
