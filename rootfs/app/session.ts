@@ -36,6 +36,13 @@ function spawnPty(session: Session): void {
   // tmux new-session -A: attach if session already exists, create otherwise.
   // This is the key flag that makes sessions survive add-on restarts —
   // Bun respawns the tmux client, which reattaches to the still-running session.
+
+  // Batch PTY output: accumulate chunks within a single event-loop tick and
+  // send them as one WebSocket message. Eliminates message flood on large output
+  // with no perceptible latency increase for interactive typing.
+  let flushScheduled = false;
+  let batchBuffer = "";
+
   const proc = Bun.spawn(
     [
       "tmux", "new-session", "-A",
@@ -54,9 +61,17 @@ function spawnPty(session: Session): void {
         data(_terminal: unknown, chunk: Buffer) {
           const data = chunk.toString();
           appendScrollback(session, data);
-          const msg = JSON.stringify({ type: "output", data });
-          for (const ws of session.clients) {
-            ws.send(msg);
+          batchBuffer += data;
+          if (!flushScheduled) {
+            flushScheduled = true;
+            setTimeout(() => {
+              flushScheduled = false;
+              const msg = JSON.stringify({ type: "output", data: batchBuffer });
+              batchBuffer = "";
+              for (const ws of session.clients) {
+                ws.send(msg);
+              }
+            }, 0);
           }
         },
       },
