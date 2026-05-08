@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.3
+
+- Fix scroll wheel not working after 1.0.2 — intercept wheel event before xterm.js to ensure scrollback is driven correctly
+
 ## 1.0.2
 
 - Fix text selection/copy broken by mouse mode — scroll wheel now handled by xterm.js directly, preserving native browser text selection

@@ -172,12 +172,14 @@
       }
     });
 
-    // Intercept scroll wheel before xterm.js can forward it to the PTY as arrow keys.
-    // xterm.js scrollback handles it instead, leaving text selection unaffected.
+    // Intercept scroll wheel in capture phase (fires before xterm.js canvas listener)
+    // so xterm.js never forwards the event to the PTY as arrow keys.
+    // term.scrollLines drives xterm.js scrollback directly.
     document.getElementById("terminal-wrap").addEventListener("wheel", (e) => {
       e.preventDefault();
+      e.stopPropagation();
       term.scrollLines(e.deltaY > 0 ? 3 : -3);
-    }, { passive: false });
+    }, { passive: false, capture: true });
 
     // --- State ---
     let ws = null;
