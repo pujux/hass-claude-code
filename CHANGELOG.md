@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.5
+
+- Remove tmux: terminal sessions are now managed directly by the server. This fixes scroll wheel, text selection, and garbage characters — all were caused by tmux's terminal multiplexing layer conflicting with xterm.js
+
 ## 1.0.4
 
 - Fix scrolling: wheel/trackpad now scrolls through full terminal history via tmux copy mode (scroll up to browse history, scroll down to return to live output)

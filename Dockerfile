@@ -20,7 +20,6 @@ RUN apk add --no-cache \
     py3-pip \
     ca-certificates \
     tzdata \
-    tmux \
     unzip
 
 # Install Bun (minimum v1.3.5 for Bun.spawn({ terminal }) PTY API)

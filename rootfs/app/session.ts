@@ -5,16 +5,10 @@ export type Session = {
   proc: any;
   clients: Set<any>; // Set<ServerWebSocket> — avoid circular import with server.ts
   name: string;
-  tmuxName: string;
   scrollback: string;
 };
 
 export const sessions = new Map<string, Session>();
-
-// tmux session names only allow [a-zA-Z0-9_\-.]
-function toTmuxName(name: string): string {
-  return name.replace(/[^a-zA-Z0-9_\-.]/g, "_") || "session";
-}
 
 export function appendScrollback(session: Pick<Session, "scrollback">, data: string): void {
   session.scrollback += data;
@@ -33,10 +27,6 @@ export function broadcastSessionList(): void {
 }
 
 function spawnPty(session: Session): void {
-  // tmux new-session -A: attach if session already exists, create otherwise.
-  // This is the key flag that makes sessions survive add-on restarts —
-  // Bun respawns the tmux client, which reattaches to the still-running session.
-
   // Batch PTY output: accumulate chunks within a single event-loop tick and
   // send them as one WebSocket message. Eliminates message flood on large output
   // with no perceptible latency increase for interactive typing.
@@ -44,15 +34,7 @@ function spawnPty(session: Session): void {
   let batchBuffer = "";
 
   const proc = Bun.spawn(
-    [
-      "tmux", "new-session", "-A",
-      "-s", session.tmuxName,
-      "-x", "220",
-      "-y", "50",
-      "-e", `CLAUDE_SESSION_NAME=${session.name}`,
-      "-e", `CLAUDE_CONFIG_DIR=/data/.claudecode`,
-      "bash", "--login",
-    ],
+    ["bash", "--login"],
     {
       cwd: "/homeassistant",
       terminal: {
@@ -105,7 +87,6 @@ export function createSession(name: string): Session {
     proc: null,
     clients: new Set(),
     name,
-    tmuxName: toTmuxName(name),
     scrollback: "",
   };
   sessions.set(name, session);
@@ -121,9 +102,6 @@ export function restartSessionProc(session: Session): void {
 export function closeSession(name: string): void {
   const session = sessions.get(name);
   if (!session) return;
-  // Kill the tmux session — terminates all processes inside it
-  Bun.spawnSync(["tmux", "kill-session", "-t", session.tmuxName]);
-  // Also SIGTERM the client process in case tmux kill-session is slow
   const pid = session.proc?.pid;
   if (pid) {
     try { process.kill(-pid, "SIGTERM"); } catch {}
