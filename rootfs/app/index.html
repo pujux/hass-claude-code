@@ -172,13 +172,17 @@
       }
     });
 
-    // Intercept scroll wheel in capture phase (fires before xterm.js canvas listener)
-    // so xterm.js never forwards the event to the PTY as arrow keys.
-    // term.scrollLines drives xterm.js scrollback directly.
+    // Intercept scroll wheel and send PgUp/PgDn to the PTY.
+    // tmux is configured to enter copy-mode on PageUp, giving access to full
+    // terminal history. Without mouse on in tmux, xterm.js handles text
+    // selection natively.
     document.getElementById("terminal-wrap").addEventListener("wheel", (e) => {
       e.preventDefault();
       e.stopPropagation();
-      term.scrollLines(e.deltaY > 0 ? 3 : -3);
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        const key = e.deltaY < 0 ? "\x1b[5~" : "\x1b[6~"; // PgUp / PgDn
+        ws.send(JSON.stringify({ type: "input", data: key }));
+      }
     }, { passive: false, capture: true });
 
     // --- State ---

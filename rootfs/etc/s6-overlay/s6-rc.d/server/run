@@ -10,6 +10,7 @@ set -g status off
 set -g escape-time 0
 set -g default-terminal "tmux-256color"
 set -g terminal-overrides ""
+bind-key -n PageUp copy-mode -e
 EOF
 
 # --- Ensure /tmp/claude-paste is auto-allowed in Claude Code settings ---
