@@ -7,7 +7,10 @@ mkdir -p /data/.claudecode /tmp/claude-paste
 # --- tmux config: disable status bar (we have our own tab bar) ---
 cat > /root/.tmux.conf << 'EOF'
 set -g status off
-set -g allow-passthrough off
+set -g mouse on
+set -g escape-time 0
+set -g default-terminal "tmux-256color"
+set -g terminal-overrides ""
 EOF
 
 # --- Ensure /tmp/claude-paste is auto-allowed in Claude Code settings ---
