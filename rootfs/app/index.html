@@ -172,6 +172,13 @@
       }
     });
 
+    // Intercept scroll wheel before xterm.js can forward it to the PTY as arrow keys.
+    // xterm.js scrollback handles it instead, leaving text selection unaffected.
+    document.getElementById("terminal-wrap").addEventListener("wheel", (e) => {
+      e.preventDefault();
+      term.scrollLines(e.deltaY > 0 ? 3 : -3);
+    }, { passive: false });
+
     // --- State ---
     let ws = null;
     let activeSession = "main";
