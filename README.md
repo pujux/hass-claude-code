@@ -36,6 +36,10 @@ Copy any screenshot or image to your clipboard and paste (`Ctrl+V` / `Cmd+V`) in
 
 The Home Assistant MCP is pre-configured on every start. Claude can query entity states, control devices, check automations, and more — no manual setup required.
 
+### Supervisor CLI (`ha`)
+
+The Home Assistant Supervisor CLI is installed and ready to use. Claude (or you) can run `ha` commands directly in the terminal to manage the system — for example `ha core restart`, `ha supervisor logs`, `ha addons`, or `ha backups`. It's authenticated automatically, so no setup is required.
+
 To add additional MCP servers:
 
 ```sh

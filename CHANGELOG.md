@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.6
+
+- Bundle the Home Assistant Supervisor CLI (`ha`). Claude can now manage the system directly — restart Core, view Supervisor/add-on logs, manage backups, and more. Works out of the box with no configuration.
+
 ## 1.0.5
 
 - Remove tmux: terminal sessions are now managed directly by the server. This fixes scroll wheel, text selection, and garbage characters — all were caused by tmux's terminal multiplexing layer conflicting with xterm.js

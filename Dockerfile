@@ -22,6 +22,16 @@ RUN apk add --no-cache \
     tzdata \
     unzip
 
+# Install the Home Assistant Supervisor CLI (`ha`)
+# Static binary from home-assistant/cli; BUILD_ARCH (amd64/aarch64) is injected
+# by the add-on builder and maps 1:1 to the release asset names.
+# Works with zero config: it reads SUPERVISOR_TOKEN (granted by hassio_api: true)
+# and defaults to the `supervisor` endpoint.
+ARG BUILD_ARCH
+ARG HA_CLI_VERSION=5.2.0
+RUN curl -fsSL "https://github.com/home-assistant/cli/releases/download/${HA_CLI_VERSION}/ha_${BUILD_ARCH}" \
+      -o /usr/bin/ha && chmod +x /usr/bin/ha
+
 # Install Bun (minimum v1.3.5 for Bun.spawn({ terminal }) PTY API)
 RUN curl -fsSL https://bun.sh/install | bash
 
