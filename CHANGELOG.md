@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.7
+
+- Grant the add-on the `manager` Supervisor role so the `ha` CLI can read logs (`ha core/supervisor/host logs`, add-on logs) and manage add-ons, backups, and the store. Previously the default role only allowed `*/info` endpoints, so log commands returned 403 Forbidden.
+
 ## 1.0.6
 
 - Bundle the Home Assistant Supervisor CLI (`ha`). Claude can now manage the system directly — restart Core, view Supervisor/add-on logs, manage backups, and more. Works out of the box with no configuration.
